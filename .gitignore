@@ -1,5 +1,9 @@
+# Exclude the following folders and files
+/environ
+/gisdata
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
 madaclim.Rproj
+madaclim.log

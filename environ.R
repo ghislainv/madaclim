@@ -1,15 +1,26 @@
 ##=====================================================
+##
 ## Environmental data for Madagascar
+##
 ## Ghislain Vieilledent <ghislain.vieilledent@cirad.fr>
-## July 2015
+##
+## March 2016
+##
 ##=====================================================
 
-##= libraries
+## gdal library is needed to run this script
+## http://www.gdal.org/
+
+## Load libraries
 library(sp)
 library(raster)
 library(rgdal)
 
-##= gdalwrap options
+## Create some directories
+dir.create("gisdata") ## To save GIS data
+dir.create("environ") ## To save 1km environmental data
+
+## gdalwrap options
 Extent <- "298000 7155000 1101000 8683000"
 Res <- "1000"
 nodat <- "-9999"
@@ -18,29 +29,55 @@ proj.t <- "EPSG:32738"
 
 ##==========================================================
 ##
-##= Vegetation map by Kew
+## Simplified geological map by Kew
 ##
 ##==========================================================
 
-## ## VegGeol
-## kew <- readOGR("/media/ghislain/BioSceneMada2/gisdata/mada/vegetation_kew/","VEGGEOL")
-## projection(kew)
-## kew.38S <- spTransform(kew,CRS("+init=epsg:32738"))
-## writeOGR(kew.38S,"/media/ghislain/BioSceneMada2/gisdata/mada/vegetation_kew/",layer="kew_38S",driver="ESRI Shapefile")
-## system("gdal_rasterize -ot Float -a_nodata -32768 -te 298000 7155000 1101000 8683000 \\
-##         -tr 1000 1000 -a ID -l kew_38S \\
-##         /media/ghislain/BioSceneMada2/gisdata/mada/vegetation_kew/kew_38S.shp \\
-##         /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/kew_1km.tif")
+## Create directory
+dir.create("gisdata/geol")
+## Download and unzip
+url.geol <- "http://www.kew.org/gis/projects/madagascar/downloads/geolsimp.zip"
+download.file(url=url.geol,destfile="gisdata/geol/geolsimp.zip",method="wget")
+unzip("gisdata/geol/geolsimp.zip",exdir="gisdata/geol",overwrite=TRUE)
+## Reproject in UTM 38S
+geol.latlong <- readOGR("gisdata/geol/","geolsimp")
+crs(geol.latlong) <- "+init=epsg:4326"
+geol <- spTransform(geol.latlong,CRS("+init=epsg:32738"))
+writeOGR(geol,dsn="gisdata/geol/",layer="geolsimp_38S",driver="ESRI Shapefile")
+## Rasterize with gdal
+system("gdal_rasterize -ot Int16 -a_nodata -32768 -te 298000 7155000 1101000 8683000 \\
+        -tr 1000 1000 -a RECLASS_ID -l geolsimp_38S \\
+        gisdata/geol/geolsimp_38S.shp \\
+        environ/geol_1km.tif")
+## Attribute table
+dgeol <- geol@data
+tgeol <- as.data.frame(tapply(as.character(dgeol$RECLASS_NA),dgeol$RECLASS_ID,unique))
+names(tgeol) <- "type"
+sink("environ/geol_attribute.txt")
+tgeol
+sink()
 
+##==========================================================
+##
+## Vegetation map by Kew
+##
+##==========================================================
+
+## Create directory
+dir.create("gisdata/vegmada_kew")
+## Download and unzip
+url.veggeol <- "http://www.vegmad.org/downloads/utm/veg_tif.zip"
+download.file(url=url.veggeol,destfile="gisdata/vegmada_kew/vegmada.zip",method="wget")
+unzip("gisdata/vegmada_kew/vegmada.zip",exdir="gisdata/vegmada_kew",overwrite=TRUE)
 ## VegMada
 system("gdalwarp -overwrite -srcnodata 0 -dstnodata -32768 -ot Int16 -s_srs EPSG:32738 -t_srs EPSG:32738 \\
         -r near -tr 1000 1000 -te 298000 7155000 1101000 8683000 -of GTiff \\
-        /media/ghislain/BioSceneMada2/gisdata/mada/vegmada_kew/vegetation.tif \\
-        /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/vegmada_1km.tif")
+        gisdata/vegmada_kew/vegetation.tif \\
+        environ/vegmada_1km.tif")
 
 ##==========================================================
 ##
-##= forest: percentage of forest in 1km2
+## Forest: percentage of forest in 1km2
 ##
 ##==========================================================
 
@@ -108,13 +145,13 @@ system("gdalwarp -overwrite -srcnodata -32768 -dstnodata -9999 -ot Int16 -s_srs 
         /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/solar_1km.tif")
 
 ## geology
-geol.latlong <- readOGR("/media/ghislain/BioSceneMada2/gisdata/mada/geolsimp/","geolsimp")
+geol.latlong <- readOGR("gisdata/geolsimp/","geolsimp")
 crs(geol.latlong) <- "+init=epsg:4326"
 geol <- spTransform(geol.latlong,CRS("+init=epsg:32738"))
-writeOGR(geol,dsn="/media/ghislain/BioSceneMada2/gisdata/mada/geolsimp/",layer="geolsimp_38S",driver="ESRI Shapefile")
+writeOGR(geol,dsn="gisdata/geolsimp/",layer="geolsimp_38S",driver="ESRI Shapefile")
 system("gdal_rasterize -ot Int16 -a_nodata -32768 -te 298000 7155000 1101000 8683000 \\
         -tr 1000 1000 -a RECLASS_ID -l geolsimp_38S \\
-        /media/ghislain/BioSceneMada2/gisdata/mada/geolsimp/geolsimp_38S.shp \\
+        gisdata/geolsimp/geolsimp_38S.shp \\
         /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/geol_1km.tif")
 # Attribute table
 dgeol <- geol@data
@@ -125,21 +162,21 @@ tgeol
 sink()
 
 ## soil
-soil.latlong <- readOGR("/media/ghislain/BioSceneMada2/gisdata/mada/Soil_morphopedo/shape/","geomorph_wgs")
+soil.latlong <- readOGR("gisdata/Soil_morphopedo/shape/","geomorph_wgs")
 crs(soil.latlong) <- "+init=epsg:4326"
 soil <- spTransform(soil.latlong,CRS("+init=epsg:32738"))
 soil$SOLDT_ID <- as.numeric(soil$SOLDT)
-writeOGR(soil,dsn="/media/ghislain/BioSceneMada2/gisdata/mada/Soil_morphopedo/shape/",layer="soil_38S",driver="ESRI Shapefile")
+writeOGR(soil,dsn="gisdata/Soil_morphopedo/shape/",layer="soil_38S",driver="ESRI Shapefile")
 system("gdal_rasterize -ot Int16 -a_nodata -32768 -te 298000 7155000 1101000 8683000 \\
         -tr 1000 1000 -a SOLDT_ID -l soil_38S \\
-        /media/ghislain/BioSceneMada2/gisdata/mada/Soil_morphopedo/shape/soil_38S.shp \\
+        gisdata/Soil_morphopedo/shape/soil_38S.shp \\
         /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/soil_1km.tif")
 
 ## watershed
-wshed <- raster("/media/ghislain/BioSceneMada2/gisdata/mada/Watersheds/EVO_596_sm_AppendixS2.tif")
+wshed <- raster("gisdata/Watersheds/EVO_596_sm_AppendixS2.tif")
 system("gdalwarp -overwrite -ot Int16 -srcnodata 255 -dstnodata -32768 -s_srs EPSG:4326 -t_srs EPSG:32738 \\
         -r near -tr 1000 1000 -te 298000 7155000 1101000 8683000 -of GTiff \\
-        /media/ghislain/BioSceneMada2/gisdata/mada/Watersheds/EVO_596_sm_AppendixS2.tif \\
+        gisdata/Watersheds/EVO_596_sm_AppendixS2.tif \\
         /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/wshed_1km.tif")
 
 ## Import
