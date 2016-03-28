@@ -1,0 +1,12 @@
+                                          type
+1                     Alluvial & Lake deposits
+2                         Unconsolidated Sands
+4                               Mangrove Swamp
+5         Tertiary Limestones + Marls & Chalks
+6                                   Sandstones
+7  Mesozoic Limestones + Marls (inc. "Tsingy")
+9          Lavas (including Basalts & Gabbros)
+10                  Basement Rocks (Ign & Met)
+11                                 Ultrabasics
+12                                  Quartzites
+13                            Marble (Cipolin)

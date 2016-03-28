@@ -1,6 +1,5 @@
 # Exclude the following folders and files
-/environ
-/gisdata
+/temp
 .Rproj.user
 .Rhistory
 .RData
