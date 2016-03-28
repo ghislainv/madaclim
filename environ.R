@@ -34,21 +34,23 @@ proj.t <- "EPSG:32738"
 ##
 ##==========================================================
 
+## Reference: Kew (http://www.kew.org/gis/projects/madagascar/download.html)
+
 ## Create directory
 dir.create("gisdata/geol")
 ## Download and unzip
 url.geol <- "http://www.kew.org/gis/projects/madagascar/downloads/geolsimp.zip"
-download.file(url=url.geol,destfile="gisdata/geol/geolsimp.zip",method="wget")
-unzip("gisdata/geol/geolsimp.zip",exdir="temp",overwrite=TRUE)
+download.file(url=url.geol,destfile="gisdata/geol/geolsimp.zip",method="wget",quiet=TRUE)
+unzip("gisdata/geol/geolsimp.zip",exdir="temp/geol",overwrite=TRUE)
 ## Reproject in UTM 38S
-geol.latlong <- readOGR("temp/","geolsimp")
+geol.latlong <- readOGR("temp/geol","geolsimp")
 crs(geol.latlong) <- "+init=epsg:4326"
 geol <- spTransform(geol.latlong,CRS("+init=epsg:32738"))
-writeOGR(geol,dsn="temp/",layer="geolsimp_38S",driver="ESRI Shapefile")
+writeOGR(geol,dsn="temp/geol",layer="geolsimp_38S",driver="ESRI Shapefile")
 ## Rasterize with gdal
 system("gdal_rasterize -ot Int16 -a_nodata -32768 -te 298000 7155000 1101000 8683000 \\
         -tr 1000 1000 -a RECLASS_ID -l geolsimp_38S \\
-        temp/geolsimp_38S.shp \\
+        temp/geol/geolsimp_38S.shp \\
         environ/geol_1km.tif")
 ## Attribute table
 dgeol <- geol@data
@@ -64,11 +66,15 @@ sink()
 ##
 ##==========================================================
 
+## Reference: Pearson, R. G., & Raxworthy, C. J. (2009). The evolution of local
+## endemism in Madagascar: watershed versus climatic gradient hypotheses
+## evaluated by null biogeographic models. Evolution, 63(4), 959-967.
+
 ## Create directory
 dir.create("gisdata/watersheds")
 ## Download and unzip
 url.wshed <- "http://onlinelibrary.wiley.com/store/10.1111/j.1558-5646.2008.00596.x/asset/supinfo/EVO_596_sm_AppendixS2.tif?v=1&s=62c6690369a2b83a224560f08be91462993d485d"
-download.file(url=url.wshed,destfile="gisdata/watersheds/EVO_596_sm_AppendixS2.tif",method="wget")
+download.file(url=url.wshed,destfile="gisdata/watersheds/EVO_596_sm_AppendixS2.tif",method="wget",quiet=TRUE)
 system("gdalwarp -overwrite -ot Int16 -srcnodata 255 -dstnodata -32768 -s_srs EPSG:4326 -t_srs EPSG:32738 \\
         -r near -tr 1000 1000 -te 298000 7155000 1101000 8683000 -of GTiff \\
         gisdata/watersheds/EVO_596_sm_AppendixS2.tif \\
@@ -80,16 +86,19 @@ system("gdalwarp -overwrite -ot Int16 -srcnodata 255 -dstnodata -32768 -s_srs EP
 ##
 ##==========================================================
 
-soil.latlong <- readOGR("gisdata/Soil_morphopedo/shape/","geomorph_wgs")
+## Reference: Delenne M., Pelletier F., 1981. Carte du Potentiel des Unités
+## Physiques de Madagascar, au 1:1 000 000e, ORSTOM, Bondy
+
+unzip("gisdata/soil/morphopedo_mada.zip",exdir="temp/soil",overwrite=TRUE)
+soil.latlong <- readOGR("temp/soil/shape/","geomorph_wgs")
 crs(soil.latlong) <- "+init=epsg:4326"
 soil <- spTransform(soil.latlong,CRS("+init=epsg:32738"))
 soil$SOLDT_ID <- as.numeric(soil$SOLDT)
-writeOGR(soil,dsn="gisdata/Soil_morphopedo/shape/",layer="soil_38S",driver="ESRI Shapefile")
+writeOGR(soil,dsn="temp/soil/shape/",layer="soil_38S",driver="ESRI Shapefile")
 system("gdal_rasterize -ot Int16 -a_nodata -32768 -te 298000 7155000 1101000 8683000 \\
         -tr 1000 1000 -a SOLDT_ID -l soil_38S \\
-        gisdata/Soil_morphopedo/shape/soil_38S.shp \\
-        /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/soil_1km.tif")
-
+        temp/soil/shape/soil_38S.shp \\
+        environ/soil_1km.tif")
 
 ##==========================================================
 ##
@@ -97,16 +106,18 @@ system("gdal_rasterize -ot Int16 -a_nodata -32768 -te 298000 7155000 1101000 868
 ##
 ##==========================================================
 
+## Reference: The CEFP Madagascar Vegetation mapping project (http://vegmad.org)
+
 ## Create directory
 dir.create("gisdata/vegmada_kew")
 ## Download and unzip
 url.veggeol <- "http://www.vegmad.org/downloads/utm/veg_tif.zip"
-download.file(url=url.veggeol,destfile="gisdata/vegmada_kew/vegmada.zip",method="wget")
-unzip("gisdata/vegmada_kew/vegmada.zip",exdir="temp",overwrite=TRUE)
+download.file(url=url.veggeol,destfile="gisdata/vegmada_kew/vegmada.zip",method="wget",quiet=TRUE)
+unzip("gisdata/vegmada_kew/vegmada.zip",exdir="temp/veg",overwrite=TRUE)
 ## VegMada
 system("gdalwarp -overwrite -srcnodata 0 -dstnodata -32768 -ot Int16 -s_srs EPSG:32738 -t_srs EPSG:32738 \\
         -r near -tr 1000 1000 -te 298000 7155000 1101000 8683000 -of GTiff \\
-        temp/vegetation.tif \\
+        temp/veg/vegetation.tif \\
         environ/vegmada_1km.tif")
 
 ##==========================================================
@@ -177,8 +188,6 @@ system("gdalwarp -overwrite -srcnodata -32768 -dstnodata -9999 -ot Int16 -s_srs 
         -r bilinear -tr 1000 1000 -te 298000 7155000 1101000 8683000 -of GTiff \\
         /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/solar.tif \\
         /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/solar_1km.tif")
-
-
 
 ## Import
 altitude <- raster("/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/altitude_1km.tif")
