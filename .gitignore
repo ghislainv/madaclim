@@ -1,5 +1,6 @@
 # Exclude the following folders and files
 /temp
+/grassdata
 .Rproj.user
 .Rhistory
 .RData

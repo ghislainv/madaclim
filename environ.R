@@ -11,10 +11,14 @@
 ## gdal library is needed to run this script
 ## http://www.gdal.org/
 
+## GRASS GIS 7.x.x is also needed to run this script
+## https://grass.osgeo.org/
+
 ## Load libraries
 library(sp)
 library(raster)
 library(rgdal)
+library(rgrass7)
 
 ## Create some directories
 dir.create("gisdata") ## To save GIS data
@@ -34,7 +38,8 @@ proj.t <- "EPSG:32738"
 ##
 ##==========================================================
 
-## Reference: Kew (http://www.kew.org/gis/projects/madagascar/download.html)
+## Reference: 
+## Kew: http://www.kew.org/gis/projects/madagascar/download.html
 
 ## Create directory
 dir.create("gisdata/geol")
@@ -66,9 +71,10 @@ sink()
 ##
 ##==========================================================
 
-## Reference: Pearson, R. G., & Raxworthy, C. J. (2009). The evolution of local
-## endemism in Madagascar: watershed versus climatic gradient hypotheses
-## evaluated by null biogeographic models. Evolution, 63(4), 959-967.
+## Reference: 
+## Pearson, R. G., & Raxworthy, C. J. (2009). The evolution of local endemism in
+## Madagascar: watershed versus climatic gradient hypotheses evaluated by null
+## biogeographic models. Evolution, 63(4), 959-967.
 
 ## Create directory
 dir.create("gisdata/watersheds")
@@ -86,8 +92,9 @@ system("gdalwarp -overwrite -ot Int16 -srcnodata 255 -dstnodata -32768 -s_srs EP
 ##
 ##==========================================================
 
-## Reference: Delenne M., Pelletier F., 1981. Carte du Potentiel des Unités
-## Physiques de Madagascar, au 1:1 000 000e, ORSTOM, Bondy
+## Reference: 
+## Delenne M., Pelletier F., 1981. Carte du Potentiel des Unités Physiques de
+## Madagascar, au 1:1 000 000e, ORSTOM, Bondy
 
 unzip("gisdata/soil/morphopedo_mada.zip",exdir="temp/soil",overwrite=TRUE)
 soil.latlong <- readOGR("temp/soil/shape/","geomorph_wgs")
@@ -106,7 +113,8 @@ system("gdal_rasterize -ot Int16 -a_nodata -32768 -te 298000 7155000 1101000 868
 ##
 ##==========================================================
 
-## Reference: The CEFP Madagascar Vegetation mapping project (http://vegmad.org)
+## Reference: 
+## The CEFP Madagascar Vegetation mapping project: http://vegmad.org
 
 ## Create directory
 dir.create("gisdata/vegmada_kew")
@@ -126,29 +134,57 @@ system("gdalwarp -overwrite -srcnodata 0 -dstnodata -32768 -ot Int16 -s_srs EPSG
 ##
 ##==========================================================
 
+## References:
+## (1) Hansen, M. C., Potapov, P. V., Moore, R., Hancher, M., Turubanova, S. A.,
+## Tyukavina, A., ... & Kommareddy, A. (2013). High-resolution global maps of
+## 21st-century forest cover change. Science, 342(6160), 850-853.
+## (2) Harper, G. J., Steininger, M. K., Tucker, C. J., Juhn, D., & Hawkins, F.
+## (2007). Fifty years of deforestation and forest fragmentation in Madagascar.
+## Environmental Conservation, 34(4), 325.
+## (3) BioSceneMada project: http://bioscenemada.net
+
+## Create directory
+dir.create("gisdata/forest")
+## Download
+url.for2010 <- "http://bioscenemada.net/FileTransfer/for2010.tif"
+url.forCI.905 <- "http://bioscenemada.net/FileTransfer/Forest_CI_905.tif"
+download.file(url=url.for2010,destfile="gisdata/forest/for2010.tif",method="wget",quiet=TRUE)
+download.file(url=url.forCI.905,destfile="gisdata/forest/Forest_CI_905.tif",method="wget",quiet=TRUE)
+## Create new grass location in UTM 38S
+dir.create("grassdata")
+system("grass70 -c epsg:32738 grassdata/forest.mada")
+## Connect R to grass location
+initGRASS(gisBase="/usr/local/grass-7.0.1",home=tempdir(), 
+          gisDbase="grassdata",
+          location="forest.mada",mapset="PERMANENT",
+          override=TRUE)
+## Import rasters in grass
+system("r.in.gdal input=gisdata/forest/Forest_CI_905.tif output=Forest_CI_905")
+system("r.in.gdal input=gisdata/forest/for2010.tif output=for2010")
 ## Set region on CI map
-system("g.region rast=Forest_CI_905_30m -ap")
+system("g.region rast=Forest_CI_905 -ap")
 ## Create Mada raster at 30m
-system("r.mapcalc 'Mada=if(!isnull(Forest_CI_905_30m),1,null())'")
+system("r.mapcalc 'Mada=if(!isnull(Forest_CI_905),1,null())'")
 
 ## Create grid with 1 x 1 km cells
 system("g.region w=298000 e=1101000 s=7155000 n=8683000 res=1000 -ap")
 ## Use r.resamp.stat
-system("r.resamp.stats input=for2010_30m output=forest_n method=sum")
+system("r.resamp.stats input=for2010 output=forest_n method=sum")
 system("r.resamp.stats input=Mada output=land_n method=sum")
-## Mada 1km if land_n > 555 (more than 50% of the 1km cell is covered by land)
-system("r.mapcalc 'mada_1km=Mada'")
-## correction Mada if land_n > 555 (more than 50% of the 1km cell is covered by land)
-system("r.mapcalc 'mada_1km=if(land_n>555 &&& !isnull(land_n),1,mada_1km)'")
+## Mada 1km
+system("r.mapcalc 'mada_1km = Mada'")
+## Correction Mada if land_n > 555 (more than 50% of the 1km cell is covered by land)
+## Indeed, 555*30*30 = 499500 km2 and 556*30*30 = 500400 km2
+system("r.mapcalc --o 'mada_1km = if(land_n>555 &&& !isnull(land_n),1,mada_1km)'")
 ## Percentage of forest
-system("r.mask -o 'mada_1km'")
-system("r.mapcalc 'percfor10=round(100*forest_n/land_n)'")
+system("r.mask --o 'mada_1km'")
+system("r.mapcalc 'percfor10 = round(100*forest_n/land_n)'")
 system("r.info percfor10")
 system("r.mask -r")
-system("r.mapcalc 'percfor10=if(!isnull(mada_1km) && isnull(forest_n),0,percfor10)'")
+system("r.mapcalc --o 'percfor10 = if(!isnull(mada_1km) && isnull(forest_n),0,percfor10)'")
 
 ## Export
-system("r.out.gdal input=percfor10 output=percfor2010.tif type=UInt16 createopt='compress=lzw,predictor=2'")
+system("r.out.gdal input=percfor10 output=environ/percfor2010.tif type=UInt16 createopt='compress=lzw,predictor=2'")
 
 ##==========================================================
 ##
