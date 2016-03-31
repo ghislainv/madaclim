@@ -81,6 +81,7 @@ dir.create("gisdata/watersheds")
 ## Download and unzip
 url.wshed <- "http://onlinelibrary.wiley.com/store/10.1111/j.1558-5646.2008.00596.x/asset/supinfo/EVO_596_sm_AppendixS2.tif?v=1&s=62c6690369a2b83a224560f08be91462993d485d"
 download.file(url=url.wshed,destfile="gisdata/watersheds/EVO_596_sm_AppendixS2.tif",method="wget",quiet=TRUE)
+## Resample
 system("gdalwarp -overwrite -ot Int16 -srcnodata 255 -dstnodata -32768 -s_srs EPSG:4326 -t_srs EPSG:32738 \\
         -r near -tr 1000 1000 -te 298000 7155000 1101000 8683000 -of GTiff \\
         gisdata/watersheds/EVO_596_sm_AppendixS2.tif \\
@@ -192,6 +193,31 @@ system("r.out.gdal input=percfor10 output=environ/percfor2010.tif type=UInt16 cr
 ##
 ##==========================================================
 
+## Download and unzip CGIAR-CSI 90m DEM data
+tiles <- c("45_18","46_18","45_17","46_17","45_16","46_16","47_16","46_15","47_15")
+for (i in 1:length(tiles)) {
+  url.tile <- paste0("http://srtm.csi.cgiar.org/SRT-ZIP/SRTM_V41/SRTM_Data_GeoTiff/srtm_",tiles[i],".zip")
+  dst <- paste0("gisdata/altitude/srtm_",tiles[i],".zip")
+  download.file(url=url.tile,destfile=dst,method="wget",quiet=TRUE)
+  unzip(dst,exdir="temp/altitude",overwrite=TRUE)
+}
+
+## Mosaic with gdalbuildvrt
+system("gdalbuildvrt temp/altitude/altitude.vrt temp/altitude/*.tif")
+## Resample
+system("gdalwarp -overwrite -s_srs EPSG:4326 -t_srs EPSG:32738 \\
+        -r bilinear -tr 90 90 -te 298000 7155000 1101000 8683000 -of GTiff \\
+        -co 'COMPRESS=LZW' -co 'PREDICTOR=2' \\
+        temp/altitude/altitude.vrt \\
+        temp/altitude/altitude.tif")
+## Import raster in grass
+system("r.in.gdal --o input=temp/altitude/altitude.tif output=altitude")
+
+## Compute slope, aspect and global radiation in grass
+system("g.region rast=altitude -ap")
+system("r.slope.aspect --o elevation=altitude slope=slope aspect=aspect format=degrees")
+system("r.sun --o elevation=altitude aspect=aspect slope=slope day=79 glob_rad=global_rad")
+
 ## ## ## location: frb.defor.mada
 ## system("g.region rast=altitude -ap")
 ## system("r.out.gdal input=altitude output=/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/altitude.tif \\
@@ -264,4 +290,6 @@ par(mar=c(3,3,1,1))
 plot(s$wshed,col=terrain.colors(255))
 dev.off()
 
-##= END
+##========================================
+## End of script
+##========================================
