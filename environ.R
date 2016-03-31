@@ -14,6 +14,15 @@
 ## GRASS GIS 7.x.x is also needed to run this script
 ## https://grass.osgeo.org/
 
+## Read argument for download
+## Set "down" to TRUE if you want to download the sources. Otherwise, the data already provided in the gisdata repository will be used.
+arg <- commandArgs(trailingOnly=TRUE)
+if (length(arg)==0) {
+  down <- FALSE
+}
+down <- arg[1]
+print(down)
+
 ## Load libraries
 library(sp)
 library(raster)
@@ -44,8 +53,10 @@ proj.t <- "EPSG:32738"
 ## Create directory
 dir.create("gisdata/geol")
 ## Download and unzip
-url.geol <- "http://www.kew.org/gis/projects/madagascar/downloads/geolsimp.zip"
-download.file(url=url.geol,destfile="gisdata/geol/geolsimp.zip",method="wget",quiet=TRUE)
+if (down) {
+  url.geol <- "http://www.kew.org/gis/projects/madagascar/downloads/geolsimp.zip"
+  download.file(url=url.geol,destfile="gisdata/geol/geolsimp.zip",method="wget",quiet=TRUE)
+}
 unzip("gisdata/geol/geolsimp.zip",exdir="temp/geol",overwrite=TRUE)
 ## Reproject in UTM 38S
 geol.latlong <- readOGR("temp/geol","geolsimp")
@@ -78,9 +89,11 @@ sink()
 
 ## Create directory
 dir.create("gisdata/watersheds")
-## Download and unzip
-url.wshed <- "http://onlinelibrary.wiley.com/store/10.1111/j.1558-5646.2008.00596.x/asset/supinfo/EVO_596_sm_AppendixS2.tif?v=1&s=62c6690369a2b83a224560f08be91462993d485d"
-download.file(url=url.wshed,destfile="gisdata/watersheds/EVO_596_sm_AppendixS2.tif",method="wget",quiet=TRUE)
+## Download
+if (down) {
+  url.wshed <- "http://onlinelibrary.wiley.com/store/10.1111/j.1558-5646.2008.00596.x/asset/supinfo/EVO_596_sm_AppendixS2.tif?v=1&s=62c6690369a2b83a224560f08be91462993d485d"
+  download.file(url=url.wshed,destfile="gisdata/watersheds/EVO_596_sm_AppendixS2.tif",method="wget",quiet=TRUE)
+}
 ## Resample
 system("gdalwarp -overwrite -ot Int16 -srcnodata 255 -dstnodata -32768 -s_srs EPSG:4326 -t_srs EPSG:32738 \\
         -r near -tr 1000 1000 -te 298000 7155000 1101000 8683000 -of GTiff \\
@@ -120,8 +133,10 @@ system("gdal_rasterize -ot Int16 -a_nodata -32768 -te 298000 7155000 1101000 868
 ## Create directory
 dir.create("gisdata/vegmada_kew")
 ## Download and unzip
-url.veggeol <- "http://www.vegmad.org/downloads/utm/veg_tif.zip"
-download.file(url=url.veggeol,destfile="gisdata/vegmada_kew/vegmada.zip",method="wget",quiet=TRUE)
+if (down) {
+  url.veggeol <- "http://www.vegmad.org/downloads/utm/veg_tif.zip"
+  download.file(url=url.veggeol,destfile="gisdata/vegmada_kew/vegmada.zip",method="wget",quiet=TRUE)
+}
 unzip("gisdata/vegmada_kew/vegmada.zip",exdir="temp/veg",overwrite=TRUE)
 ## VegMada
 system("gdalwarp -overwrite -srcnodata 0 -dstnodata -32768 -ot Int16 -s_srs EPSG:32738 -t_srs EPSG:32738 \\
@@ -147,17 +162,19 @@ system("gdalwarp -overwrite -srcnodata 0 -dstnodata -32768 -ot Int16 -s_srs EPSG
 ## Create directory
 dir.create("gisdata/forest")
 ## Download
-url.for2010 <- "http://bioscenemada.net/FileTransfer/for2010.tif"
-url.forCI.905 <- "http://bioscenemada.net/FileTransfer/Forest_CI_905.tif"
-download.file(url=url.for2010,destfile="gisdata/forest/for2010.tif",method="wget",quiet=TRUE)
-download.file(url=url.forCI.905,destfile="gisdata/forest/Forest_CI_905.tif",method="wget",quiet=TRUE)
+if (down) {
+  url.for2010 <- "http://bioscenemada.net/FileTransfer/for2010.tif"
+  url.forCI.905 <- "http://bioscenemada.net/FileTransfer/Forest_CI_905.tif"
+  download.file(url=url.for2010,destfile="gisdata/forest/for2010.tif",method="wget",quiet=TRUE)
+  download.file(url=url.forCI.905,destfile="gisdata/forest/Forest_CI_905.tif",method="wget",quiet=TRUE)
+}
 ## Create new grass location in UTM 38S
 dir.create("grassdata")
-system("grass70 -c epsg:32738 grassdata/forest.mada")
+system("grass70 -c epsg:32738 grassdata/environ.mada")
 ## Connect R to grass location
 initGRASS(gisBase="/usr/local/grass-7.0.1",home=tempdir(), 
           gisDbase="grassdata",
-          location="forest.mada",mapset="PERMANENT",
+          location="environ.mada",mapset="PERMANENT",
           override=TRUE)
 ## Import rasters in grass
 system("r.in.gdal input=gisdata/forest/Forest_CI_905.tif output=Forest_CI_905")
@@ -196,99 +213,122 @@ system("r.out.gdal input=percfor10 output=environ/percfor2010.tif type=UInt16 cr
 ## Download and unzip CGIAR-CSI 90m DEM data
 tiles <- c("45_18","46_18","45_17","46_17","45_16","46_16","47_16","46_15","47_15")
 for (i in 1:length(tiles)) {
-  url.tile <- paste0("http://srtm.csi.cgiar.org/SRT-ZIP/SRTM_V41/SRTM_Data_GeoTiff/srtm_",tiles[i],".zip")
   dst <- paste0("gisdata/altitude/srtm_",tiles[i],".zip")
-  download.file(url=url.tile,destfile=dst,method="wget",quiet=TRUE)
+  if (down) {
+    url.tile <- paste0("http://srtm.csi.cgiar.org/SRT-ZIP/SRTM_V41/SRTM_Data_GeoTiff/srtm_",tiles[i],".zip")
+    download.file(url=url.tile,destfile=dst,method="wget",quiet=TRUE)
+  }
   unzip(dst,exdir="temp/altitude",overwrite=TRUE)
 }
 
 ## Mosaic with gdalbuildvrt
 system("gdalbuildvrt temp/altitude/altitude.vrt temp/altitude/*.tif")
-## Resample
-system("gdalwarp -overwrite -s_srs EPSG:4326 -t_srs EPSG:32738 \\
-        -r bilinear -tr 90 90 -te 298000 7155000 1101000 8683000 -of GTiff \\
-        -co 'COMPRESS=LZW' -co 'PREDICTOR=2' \\
+## Resample (dstnodata need to be set to 32767 as we pass from Int16 (nodata=-32768) to INT2S (nodata=-32767) in R)
+system("gdalwarp -overwrite -s_srs EPSG:4326 -t_srs EPSG:32738 -srcnodata -32768 -dstnodata -32767 \\
+        -r bilinear -tr 90 90 -te 298000 7155000 1101000 8683000 -ot Int16 -of GTiff \\
         temp/altitude/altitude.vrt \\
         temp/altitude/altitude.tif")
+
 ## Import raster in grass
 system("r.in.gdal --o input=temp/altitude/altitude.tif output=altitude")
 
 ## Compute slope, aspect and global radiation in grass
 system("g.region rast=altitude -ap")
 system("r.slope.aspect --o elevation=altitude slope=slope aspect=aspect format=degrees")
-system("r.sun --o elevation=altitude aspect=aspect slope=slope day=79 glob_rad=global_rad")
+## Computing radiation with r.sun at 90m resolution (very long to run: ~ some hours, so we set res=1000)
+system("g.region rast=altitude res=1000 -ap")
+system("r.sun --o --verbose elevation=altitude aspect=aspect slope=slope day=79 glob_rad=global_rad")
 
-## ## ## location: frb.defor.mada
-## system("g.region rast=altitude -ap")
-## system("r.out.gdal input=altitude output=/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/altitude.tif \\
-##         type=Int16 createopt='compress=lzw,predictor=2'")
-## system("r.out.gdal input=slope output=/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/slope.tif \\
-##         type=Int16 createopt='compress=lzw,predictor=2'")
-## system("r.out.gdal input=aspect output=/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/aspect.tif \\
-##         type=Int16 createopt='compress=lzw,predictor=2'")
-## system("r.out.gdal input=global_rad output=/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/solar.tif \\
-##         type=Int16 createopt='compress=lzw,predictor=2'")
+## Export
+system("g.region rast=altitude -ap")
+system("r.out.gdal --o input=altitude output=temp/altitude/altitude.tif \\
+        type=Int16 nodata=-32767 createopt='compress=lzw,predictor=2'")
+system("r.out.gdal -f --o input=slope output=temp/altitude/slope.tif \\
+        type=Int16 nodata=-32767 createopt='compress=lzw,predictor=2'")
+system("r.out.gdal -f --o input=aspect output=temp/altitude/aspect.tif \\
+        type=Int16 nodata=-32767 createopt='compress=lzw,predictor=2'")
+system("r.out.gdal -f --o input=global_rad output=temp/altitude/solar.tif \\
+        type=Int16 nodata=-32767 createopt='compress=lzw,predictor=2'")
 
 ## Resample to grid
 ## altitude
-system("gdalwarp -overwrite -srcnodata -32768 -dstnodata -9999 -ot Int16 -s_srs EPSG:32738 -t_srs EPSG:32738 \\
+system("gdalwarp -overwrite -ot Int16 -srcnodata -32767 -dstnodata -32767 \\
+        -s_srs EPSG:32738 -t_srs EPSG:32738 \\
         -r bilinear -tr 1000 1000 -te 298000 7155000 1101000 8683000 -of GTiff \\
-        /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/altitude.tif \\
-        /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/altitude_1km.tif")
+        temp/altitude/altitude.tif \\
+        environ/altitude_1km.tif")
 ## slope
-system("gdalwarp -overwrite -srcnodata -32768 -dstnodata -9999 -ot Int16 -s_srs EPSG:32738 -t_srs EPSG:32738 \\
+system("gdalwarp -overwrite -ot Int16 -srcnodata -32767 -dstnodata -32767 \\
+        -s_srs EPSG:32738 -t_srs EPSG:32738 \\
         -r bilinear -tr 1000 1000 -te 298000 7155000 1101000 8683000 -of GTiff \\
-        /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/slope.tif \\
-        /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/slope_1km.tif")
+        temp/altitude/slope.tif \\
+        environ/slope_1km.tif")
 ## aspect
-system("gdalwarp -overwrite -srcnodata -32768 -dstnodata -9999 -ot Int16 -s_srs EPSG:32738 -t_srs EPSG:32738 \\
+system("gdalwarp -overwrite -ot Int16 -srcnodata -32767 -dstnodata -32767 \\
+        -s_srs EPSG:32738 -t_srs EPSG:32738 \\
         -r bilinear -tr 1000 1000 -te 298000 7155000 1101000 8683000 -of GTiff \\
-        /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/aspect.tif \\
-        /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/aspect_1km.tif")
+        temp/altitude/aspect.tif \\
+        environ/aspect_1km.tif")
 ## solar radiation
-system("gdalwarp -overwrite -srcnodata -32768 -dstnodata -9999 -ot Int16 -s_srs EPSG:32738 -t_srs EPSG:32738 \\
+system("gdalwarp -overwrite -ot Int16 -srcnodata -32767 -dstnodata -32767 \\
+        -s_srs EPSG:32738 -t_srs EPSG:32738 \\
         -r bilinear -tr 1000 1000 -te 298000 7155000 1101000 8683000 -of GTiff \\
-        /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/solar.tif \\
-        /home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/solar_1km.tif")
+        temp/altitude/solar.tif \\
+        environ/solar_1km.tif")
 
 ## Import
-altitude <- raster("/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/altitude_1km.tif")
-slope <- raster("/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/slope_1km.tif")
-aspect <- raster("/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/aspect_1km.tif")
+altitude <- raster("environ/altitude_1km.tif")
+slope <- raster("environ/slope_1km.tif")
+aspect <- raster("environ/aspect_1km.tif")
 ## Caution: in GRASS, aspect is calculated counterclockwise from east in degrees.
 ## Transformation to clockwise from north in degrees
 asp.north <- (360+(90-values(aspect)))%%360
 values(aspect) <- asp.north
-solar <- raster("/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/solar_1km.tif")
-geol <- raster("/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/geol_1km.tif")
-soil <- raster("/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/soil_1km.tif")
-veg <- raster("/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/vegmada_1km.tif")
-wshed <- raster("/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/wshed_1km.tif")
-percfor2010 <- raster("/home/ghislain/Documents/Ghislain-CIRAD/FRB_Mada/madaclim/environ/percfor2010.tif")
+solar <- raster("environ/solar_1km.tif")
+geol <- raster("environ/geol_1km.tif")
+soil <- raster("environ/soil_1km.tif")
+veg <- raster("environ/vegmada_1km.tif")
+wshed <- raster("environ/wshed_1km.tif")
+percfor2010 <- raster("environ/percfor2010.tif")
 
-## Stack and output
+## Stack and export
 s.env <- stack(altitude,slope,aspect,solar,geol,soil,veg,wshed,percfor2010)
-writeRaster(s.env,filename="environ.tif",overwrite=TRUE,
+## Remove data for Comoro Islands
+bbCom <- extent(xmin(s.env),600000,8500000,ymax(s.env)) # bounding-box
+cellsCom <- cellsFromExtent(s.env,bbCom)
+values(s.env)[cellsCom,] <- NA
+s.env <- stack(s.env) # Transform back from RasterBrick to RasterStack
+## Export
+writeRaster(s.env,filename="environ/environ.tif",overwrite=TRUE,
             datatype="INT2S",format="GTiff",options=c("COMPRESS=LZW","PREDICTOR=2"))
 
 ## Plot
-s <- stack("environ.tif")
+s <- stack("environ/environ.tif")
 names(s) <- c("alt","slop","asp","solar","geol","soil","veg","wshed","percfor2010")
 ## All layers
-png("environ.png",width=600,height=600,res=72,pointsize=16)
-par(mar=c(5,4,3,2))
-plot(s)
+png("environ/environ.png",width=600,height=600,res=72,pointsize=16)
+par(mar=c(5,4,3,1))
+plot(s,legend.mar=7)
 dev.off()
 ## Altitude
-png("altitude.png",width=600,height=600,res=72,pointsize=16)
+png("environ/altitude.png",width=600,height=600,res=72,pointsize=16)
 par(mar=c(3,3,1,1))
 plot(s$alt,col=terrain.colors(255))
 dev.off()
 ## Watershed
-png("watershed.png",width=600,height=600,res=72,pointsize=16)
+png("environ/watershed.png",width=600,height=600,res=72,pointsize=16)
 par(mar=c(3,3,1,1))
 plot(s$wshed,col=terrain.colors(255))
 dev.off()
+
+##==========================================================
+##
+## Clean directory if necessary
+##
+##========================================================== 
+
+## unlink("grassdata",recursive=TRUE)
+## unlink("temp",recursive=TRUE)
 
 ##========================================
 ## End of script
