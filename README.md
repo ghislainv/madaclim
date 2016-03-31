@@ -15,3 +15,5 @@ MadaClim provides a set of climate layers (grids) obtained from [WorldClim](http
 Climate data are available for *current conditions* (interpolations of observed data, representative of 1950-2000), *future conditions*: downscaled global climate model (GCM) data from CMIP5 (IPPC Fifth Assessment) and *past conditions* (downscaled global climate model output).
 
 Layers have been reprojected (WGS 84 / UTM zone 38, epsg: 32738) and data resampled at 1km on an extent covering Madagascar (W: 298000, S: 7155000, E:1101000, N: 8683000). 
+
+![Current monthly potential evapotranspiration (mm).](/climate/pet.png)]
