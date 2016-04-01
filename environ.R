@@ -17,11 +17,10 @@
 ## Read argument for download
 ## Set "down" to TRUE if you want to download the sources. Otherwise, the data already provided in the gisdata repository will be used.
 arg <- commandArgs(trailingOnly=TRUE)
-if (length(arg)==0) {
-  down <- FALSE
+down <- FALSE
+if (length(arg)>0) {
+  down <- arg[1]
 }
-down <- arg[1]
-print(down)
 
 ## Load libraries
 library(sp)
@@ -62,7 +61,7 @@ unzip("gisdata/geol/geolsimp.zip",exdir="temp/geol",overwrite=TRUE)
 geol.latlong <- readOGR("temp/geol","geolsimp")
 crs(geol.latlong) <- "+init=epsg:4326"
 geol <- spTransform(geol.latlong,CRS("+init=epsg:32738"))
-writeOGR(geol,dsn="temp/geol",layer="geolsimp_38S",driver="ESRI Shapefile")
+writeOGR(geol,dsn="temp/geol",layer="geolsimp_38S",driver="ESRI Shapefile",overwrite_layer=TRUE)
 ## Rasterize with gdal
 system("gdal_rasterize -ot Int16 -a_nodata -32768 -te 298000 7155000 1101000 8683000 \\
         -tr 1000 1000 -a RECLASS_ID -l geolsimp_38S \\
@@ -115,7 +114,7 @@ soil.latlong <- readOGR("temp/soil/shape/","geomorph_wgs")
 crs(soil.latlong) <- "+init=epsg:4326"
 soil <- spTransform(soil.latlong,CRS("+init=epsg:32738"))
 soil$SOLDT_ID <- as.numeric(soil$SOLDT)
-writeOGR(soil,dsn="temp/soil/shape/",layer="soil_38S",driver="ESRI Shapefile")
+writeOGR(soil,dsn="temp/soil/shape/",layer="soil_38S",driver="ESRI Shapefile",overwrite_layer=TRUE)
 system("gdal_rasterize -ot Int16 -a_nodata -32768 -te 298000 7155000 1101000 8683000 \\
         -tr 1000 1000 -a SOLDT_ID -l soil_38S \\
         temp/soil/shape/soil_38S.shp \\
@@ -195,14 +194,13 @@ system("r.mapcalc 'mada_1km = Mada'")
 ## Indeed, 555*30*30 = 499500 km2 and 556*30*30 = 500400 km2
 system("r.mapcalc --o 'mada_1km = if(land_n>555 &&& !isnull(land_n),1,mada_1km)'")
 ## Percentage of forest
-system("r.mask --o 'mada_1km'")
+system("r.mask 'mada_1km'")
 system("r.mapcalc 'percfor10 = round(100*forest_n/land_n)'")
-system("r.info percfor10")
 system("r.mask -r")
 system("r.mapcalc --o 'percfor10 = if(!isnull(mada_1km) && isnull(forest_n),0,percfor10)'")
 
 ## Export
-system("r.out.gdal input=percfor10 output=environ/percfor2010.tif type=UInt16 createopt='compress=lzw,predictor=2'")
+system("r.out.gdal --o input=percfor10 output=environ/percfor2010.tif type=UInt16 createopt='compress=lzw,predictor=2'")
 
 ##==========================================================
 ##
