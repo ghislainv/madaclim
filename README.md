@@ -18,4 +18,8 @@ Layers have been reprojected (WGS 84 / UTM zone 38, epsg: 32738) and data resamp
 
 ![Current monthly potential evapotranspiration (mm).](climate/pet.png)
 
-Figure: Current monthly potential evapotranspiration (mm).
+Figure 1: Current monthly potential evapotranspiration (mm).
+
+![Environmental variables for Madagascar.](environ/environ.png)
+
+Figure 2: Environmental variables for Madagascar.
