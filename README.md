@@ -16,9 +16,13 @@ Climate data are available for **current conditions** (interpolations of observe
 
 Layers have been reprojected (WGS 84 / UTM zone 38, epsg: 32738) and data resampled at 1km on an extent covering Madagascar (W: 298000, S: 7155000, E:1101000, N: 8683000). 
 
+### Example: potential evapotranspiration
+
 ![Current monthly potential evapotranspiration (mm).](climate/pet.png)
 
 Figure 1: Current monthly potential evapotranspiration (mm).
+
+### Example: environmental variables
 
 ![Environmental variables for Madagascar.](environ/environ.png)
 
