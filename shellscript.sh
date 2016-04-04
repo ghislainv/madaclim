@@ -1,5 +1,5 @@
 #!/bin/sh
-echo "Executing baobab.code.R script in the background"
+echo "Executing environ.R script in the background"
 Rscript --vanilla environ.R > environ.log 2>&1 &
 # If you wan't to download the source data do:
 # Rscript --vanilla environ.R TRUE > environ.log 2>&1 &
