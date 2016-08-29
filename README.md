@@ -6,6 +6,8 @@ This repository includes the R/GRASS scripts and data used for computing climati
 
 ## MadaClim.org
 
+![Partner logos](docs/images/logos/partner_logos.jpg)
+
 The [MadaClim.org](http://madaclim.org) website is a product of the [BioSceneMada](http://bioscenemada.net) project leaded by a consortium of scientific institutes from Madagascar and France (Cirad, ETC Terra, ONE and WCS) and funded by FRB-FFEM. The objective of MadaClim is to be an equivalent to [WorldClim](http://www.worldclim.org) but focused on Madagascar and offering additional climatic and environmental data.
 
 ## Content
@@ -18,7 +20,7 @@ Layers have been reprojected (WGS 84 / UTM zone 38, epsg: 32738) and data resamp
 
 ### Example: potential evapotranspiration
 
-![Current monthly potential evapotranspiration (mm).](climate/pet.png)
+![Current monthly potential evapotranspiration (mm)](climate/pet.png)
 
 Figure 1: Current monthly potential evapotranspiration (mm).
 
