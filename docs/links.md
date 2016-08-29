@@ -30,4 +30,4 @@ permalink: /links
   * <a href="http://www.cirad.fr/" target="_blank">Cirad</a>
   * <a href="http://madagascar.cirad.fr/" target="_blank">Cirad Madagascar</a>
   * <a href="http://www.forets-biodiv.org/" target="_blank">DP Forêts et Biodiversité</a>
-  * <a href="http://ur-bsef.cirad.fr/" target="_blank">UPR BSEF</a>
+  * <a href="http://ur-forets-societes.cirad.fr/" target="_blank">UPR Forêts et Sociétés</a>
