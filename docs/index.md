@@ -3,7 +3,7 @@ layout: about
 permalink: /
 ---
 
-![Partner logos](docs/images/logos/partner_logos.jpg)
+![Partner logos](images/logos/partner_logos.jpg)
 
 The **MadaClim.org** website is a product of the [BioSceneMada](http://bioscenemada.net) project leaded by a consortium of scientific institutes from Madagascar and France (Cirad, ETC Terra, ONE and WCS) and funded by FRB-FFEM. The objective of MadaClim is to be an equivalent to [WorldClim](http://www.worldclim.org) but focused on Madagascar. MadaClim provides a set of climate layers (grids) obtained from [WorldClim](http://www.worldclim.org) and the [CGIAR CCAFS](http://www.ccafs-climate.org/data/) climate data portal.
 
